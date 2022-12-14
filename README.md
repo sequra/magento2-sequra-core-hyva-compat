@@ -10,7 +10,11 @@ Hyvä Compatibility modules that are tagged as stable can be installed using com
 
 1. Install via composer
     ```
+<<<<<<< HEAD
     composer require sequra/magento2-sequra-core-hyva-compat
+=======
+    composer require hyva-themes/magento2-sequra-core
+>>>>>>> 54e1556 (Initial commit)
     ```
 2. Enable module
     ```
