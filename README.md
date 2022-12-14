@@ -1,33 +1,42 @@
-# Base repository template
-This README would normally document whatever steps are necessary to get the
-application up and running.
 
-Things you may want to cover:
+# magento2-sequra-core
+Hyvä Themes Compatibility module for Sequra_Core
+ 
+## Installation
 
-## 📖 Overview 📖
-> An overview on the whole system or link(s) to the docs explaining it.
+### Via packagist.com
 
-### ⚙️ Components summary ⚙️
-> Main components for this service or links to the docs explaining them.
+Hyvä Compatibility modules that are tagged as stable can be installed using composer via packagist.com:
 
-### 📊 Observability and dashboards 📊
-> Links to the Grafana business and tech related dashboards.
+1. Install via composer
+    ```
+    composer require hyva-themes/magento2-sequra-core
+    ```
+2. Enable module
+    ```
+    bin/magento setup:upgrade
+    ```
 
-### 🔌 System dependencies 🔌
-> DB engine, cache tooling, job queues, cache servers, search engines, etc.
 
-## 👩‍💻 Development environment instructions 👩‍💻
-> How to get your local environment ready to start working.
+### Via gitlab
 
-### 🚧 How to run the test suite 🚧
-> How to run the tests
+For development of or to contribute to a compatibility module, it needs to be installed using composer via gitlab.  
+This installation method is not suited for deployments, because gitlab requires SSH key authorization.
 
-## 🚀 Deployment instructions 🚀
-> How to deploy your service in sandbox or production
+1. Install via composer
+    If this is the first time a compatibility module is installed via gitlab, the compat-module-fallback repository has to be
+    added as a composer repository. This step is only required once.
+    ```
+    composer config repositories.hyva-themes/magento2-compat-module-fallback git git@gitlab.hyva.io:hyva-themes/magento2-compat-module-fallback.git
+    ```
 
-## URLs list
-| What     | Production | Sandbox | Development |
-|----------|------------|---------|-------------|
-| app home |            |         |             |
-| sidekiq  |            |         |             |
-| ...      |            |         |             |
+    When the compat-module-fallback repo is configured, the compatibility module itself can be installed with composer:
+    ```
+    composer config repositories.hyva-themes/magento2-sequra-core git git@gitlab.hyva.io:hyva-themes/hyva-compat/magento2-sequra-core.git
+    composer require hyva-themes/magento2-sequra-core:dev-main
+    ```
+2. Enable module
+    ```
+    bin/magento setup:upgrade
+    ```
+   
