@@ -1,5 +1,5 @@
 {
-  "name": "hyva-themes/magento2-sequra-core",
+  "name": "sequra/magento2-sequra-core-hyva-compat",
   "description": "Hyvä Themes Compatibility module for Sequra_Core",
   "type": "magento2-module",
   "require": {
