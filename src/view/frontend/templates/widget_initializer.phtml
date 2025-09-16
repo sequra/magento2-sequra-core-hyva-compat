@@ -35,7 +35,7 @@
                 hideAllMiniWidgets();
             }
 
-            if (!config.widgetConfig.hasOwnProperty('merchantId')) {
+            if (!config.widgetConfig.hasOwnProperty('merchant') && !config.widgetConfig.hasOwnProperty('merchantId')) {
                 return;
             }
 
@@ -185,7 +185,7 @@
                 products.push(product.id)
             })
             var sequraConfigParams = {
-                merchant: config.widgetConfig.merchantId,
+                merchant: config.widgetConfig.merchant ?? config.widgetConfig.merchantId,
                 assetKey: config.widgetConfig.assetKey,
                 products: products,
                 scriptUri: config.widgetConfig.scriptUri,
