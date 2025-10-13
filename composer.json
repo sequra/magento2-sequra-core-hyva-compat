@@ -3,7 +3,7 @@
   "description": "Hyvä Themes Compatibility module for Sequra_Core",
   "type": "magento2-module",
   "require": {
-    "hyva-themes/magento2-compat-module-fallback",
+    "hyva-themes/magento2-compat-module-fallback": "^1.0",
     "sequra/magento2-core": "^3.0"
   },
   "authors": [{
