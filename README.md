@@ -37,6 +37,7 @@ This installation method is not suited for deployments, because gitlab requires 
     ```
 2. Enable module
     ```
+    bin/magento module:enable Hyva_CompatModuleFallback Hyva_SequraCore
     bin/magento setup:upgrade
     ```
    
