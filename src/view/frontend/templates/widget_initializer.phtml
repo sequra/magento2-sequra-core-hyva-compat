@@ -355,7 +355,7 @@ $widgetData = $block->getWidgetInitializeData();
                                 amount: cents,
                                 product: product
                             })[product];
-                            let creditAgreement = null
+                            let creditAgreement = null;
                             do {
                                 creditAgreement = creditAgreements.pop();
                             } while (cents < creditAgreement.min_amount.value && creditAgreements.length > 1);
