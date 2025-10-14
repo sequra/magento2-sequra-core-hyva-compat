@@ -1,4 +1,46 @@
-<div class="sequra-widget-wrapper"
-     data-content-type="sequra_core"
-     data-payment-method="">
-</div>
+<?php
+/** @var \Sequra\Core\Block\Product $block */
+/** @var \Hyva\Theme\ViewModel\HyvaCsp|null $hyvaCsp */
+
+$availableWidgets = $block->getAvailableWidgets();
+?>
+
+<?php if (isset($hyvaCsp) && $hyvaCsp instanceof \Hyva\Theme\ViewModel\HyvaCsp) {
+    $hyvaCsp->registerInlineScript();
+} ?>
+
+<div x-data="prepareSequraWidgets" x-init="init()"></div>
+
+<script>
+    function prepareSequraWidgets() {
+        return {
+            init() {
+                const w = window.SequraWidgetFacade = window.SequraWidgetFacade || {};
+                w.widgets = Array.isArray(w.widgets) ? w.widgets : [];
+                w.miniWidgets = Array.isArray(w.miniWidgets) ? w.miniWidgets : [];
+
+                const incoming = <?= json_encode($availableWidgets, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
+                if (Array.isArray(incoming)) {
+                    for (const widget of incoming) {
+                        w.widgets.push({
+                            product: widget.product,
+                            campaign: widget.campaign,
+                            priceSel: widget.priceSel,
+                            dest: widget.dest,
+                            altPriceSel: widget.altPriceSel,
+                            altTriggerSelector: widget.altTriggerSelector,
+                            theme: widget.theme,
+                            reverse: widget.reverse,
+                            minAmount: widget.minAmount,
+                            maxAmount: widget.maxAmount
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    window.addEventListener('alpine:init', () => {
+        Alpine.data('prepareSequraWidgets', prepareSequraWidgets);
+    }, {once: true});
+</script>
