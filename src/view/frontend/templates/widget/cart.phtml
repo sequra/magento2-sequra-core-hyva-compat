@@ -20,7 +20,6 @@ $availableWidgets = $block->getAvailableWidgets();
                 w.miniWidgets = Array.isArray(w.miniWidgets) ? w.miniWidgets : [];
 
                 const incoming = <?= json_encode($availableWidgets, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) ?>;
-                let added = 0;
                 if (Array.isArray(incoming)) {
                     for (const widget of incoming) {
                         w.widgets.push({
@@ -35,7 +34,6 @@ $availableWidgets = $block->getAvailableWidgets();
                             minAmount: widget.minAmount,
                             maxAmount: widget.maxAmount
                         });
-                        added++;
                     }
                 }
             }

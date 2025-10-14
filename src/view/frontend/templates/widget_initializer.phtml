@@ -29,12 +29,12 @@ $widgetData = $block->getWidgetInitializeData();
                     window.__sequraInitDone = true;
 
                     const cfg = {
-                        scriptUri: "<?= $widgetData['scriptUri']; ?>",
-                        thousandSeparator: "<?= $widgetData['thousandSeparator']; ?>",
-                        decimalSeparator: "<?= $widgetData['decimalSeparator']; ?>",
-                        locale: "<?= $widgetData['locale']; ?>",
-                        merchant: "<?= $widgetData['merchantId']; ?>",
-                        assetKey: "<?= $widgetData['assetKey']; ?>",
+                        scriptUri: "<?= $block->escapeQuote($widgetData['scriptUri']); ?>",
+                        thousandSeparator: "<?= $block->escapeQuote($widgetData['thousandSeparator']); ?>",
+                        decimalSeparator: "<?= $block->escapeQuote($widgetData['decimalSeparator']); ?>",
+                        locale: "<?= $block->escapeQuote($widgetData['locale']); ?>",
+                        merchant: "<?= $block->escapeQuote($widgetData['merchantId']); ?>",
+                        assetKey: "<?= $block->escapeQuote($widgetData['assetKey']); ?>",
                         products: <?= json_encode($widgetData['products'],
                                 JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR); ?>
                     };
