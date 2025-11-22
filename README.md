@@ -1,7 +1,11 @@
 
 # magento2-sequra-core
 Hyvä Themes Compatibility module for Sequra_Core
- 
+
+This module provides compatibility for:
+- **Hyvä Theme**: Product and cart page widgets
+- **Hyvä Checkout**: Payment method integration (requires Hyva Checkout)
+
 ## Installation
 
 ### Via packagist.com
@@ -40,4 +44,20 @@ This installation method is not suited for deployments, because gitlab requires 
     bin/magento module:enable Hyva_CompatModuleFallback Hyva_SequraCore
     bin/magento setup:upgrade
     ```
-   
+
+## Hyva Checkout Support
+
+For Hyva Checkout payment method integration, ensure you have Hyva Checkout installed:
+
+```
+composer require hyva-themes/magento2-hyva-checkout
+```
+
+The Sequra payment methods will automatically appear in the checkout when both this compatibility module and Hyva Checkout are installed.
+
+### Features
+
+- Dynamic payment method loading from Sequra API
+- Support for both Hosted Payment Page (HPP) and inline form modes
+- Educational popup widgets for payment information
+- Automatic refresh when shipping/billing address changes
