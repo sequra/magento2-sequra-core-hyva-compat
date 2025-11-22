@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Hyva_Checkout:etc/hyva_checkout_components.xsd">
+    <component id="checkout.payment.method.sequra_payment">
+        <magewire>
+            <name>Hyva\SequraCore\Magewire\Checkout\Payment\Method\Sequra</name>
+            <template>Hyva_SequraCore::magewire/checkout/payment/method/sequra.phtml</template>
+        </magewire>
+    </component>
+</config>
