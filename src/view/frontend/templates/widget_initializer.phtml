@@ -33,7 +33,7 @@ $widgetData = $block->getWidgetInitializeData();
                         thousandSeparator: "<?= $block->escapeQuote($widgetData['thousandSeparator']); ?>",
                         decimalSeparator: "<?= $block->escapeQuote($widgetData['decimalSeparator']); ?>",
                         locale: "<?= $block->escapeQuote($widgetData['locale']); ?>",
-                        merchant: "<?= $block->escapeQuote($widgetData['merchantId']); ?>",
+                        merchant: "<?= $block->escapeQuote($widgetData['merchant']); ?>",
                         assetKey: "<?= $block->escapeQuote($widgetData['assetKey']); ?>",
                         products: <?= json_encode($widgetData['products'],
                                 JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR); ?>
