@@ -4,7 +4,7 @@ Hyvä Themes Compatibility module for Sequra_Core
 
 This module provides compatibility for:
 - **Hyvä Theme**: Product and cart page widgets
-- **Hyvä Checkout**: Payment method integration (requires Hyva Checkout)
+- **Hyvä Checkout**: Payment method integration (requires Hyvä Checkout >= 1.1.13)
 
 ## Installation
 
@@ -45,19 +45,21 @@ This installation method is not suited for deployments, because gitlab requires 
     bin/magento setup:upgrade
     ```
 
-## Hyva Checkout Support
+## Hyvä Checkout Support
 
-For Hyva Checkout payment method integration, ensure you have Hyva Checkout installed:
+For Hyvä Checkout payment method integration, ensure you have Hyvä Checkout (>= 1.1.13) installed:
 
 ```
 composer require hyva-themes/magento2-hyva-checkout
 ```
 
-The Sequra payment methods will automatically appear in the checkout when both this compatibility module and Hyva Checkout are installed.
+The SeQura payment methods will automatically appear in the checkout when both this compatibility module and Hyvä Checkout are installed.
+
+Order placement is handled through a Hyvä Checkout place-order service: the Magento order is **not** created when the shopper clicks *Place Order*. Instead the shopper is redirected to the SeQura hosted page to complete identification, and the order is created by the SeQura webhook — exactly as in the standard Magento checkout.
 
 ### Features
 
-- Dynamic payment method loading from Sequra API
-- Support for both Hosted Payment Page (HPP) and inline form modes
+- Dynamic payment method loading from the SeQura API
+- Redirect to the SeQura hosted page for both hosted and inline configurations
 - Educational popup widgets for payment information
 - Automatic refresh when shipping/billing address changes

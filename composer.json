@@ -7,7 +7,7 @@
     "sequra/magento2-core": "^3.0"
   },
   "suggest": {
-    "hyva-themes/magento2-hyva-checkout": "Required for Hyva Checkout payment method integration"
+    "hyva-themes/magento2-hyva-checkout": "Required for Hyvä Checkout payment method integration (>= 1.1.13)"
   },
   "authors": [{
       "name": "SeQura Tech",
