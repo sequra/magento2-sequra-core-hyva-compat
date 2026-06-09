@@ -11,4 +11,11 @@
             </argument>
         </arguments>
     </type>
+    <type name="Hyva\Checkout\Model\Magewire\Payment\PlaceOrderServiceProvider">
+        <arguments>
+            <argument name="placeOrderServiceList" xsi:type="array">
+                <item name="sequra_payment" xsi:type="object">Hyva\SequraCore\Service\PlaceOrderService</item>
+            </argument>
+        </arguments>
+    </type>
 </config>
