@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace Hyva\SequraCore\Magewire\Checkout\Payment\Method;
 
 use Magento\Checkout\Model\Session as CheckoutSession;
-use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\UrlInterface;
-use Magento\Store\Model\StoreManagerInterface;
-use Magewire\Magewire\Component;
+use Magento\Quote\Api\CartRepositoryInterface;
+use Magewirephp\Magewire\Component;
+use Psr\Log\LoggerInterface;
 use SeQura\Core\BusinessLogic\AdminAPI\AdminAPI;
 use SeQura\Core\BusinessLogic\CheckoutAPI\CheckoutAPI;
 use Sequra\Core\Model\Api\Builders\CreateOrderRequestBuilderFactory;
@@ -17,89 +16,32 @@ class Sequra extends Component
 {
     public const METHOD_CODE = 'sequra_payment';
 
-    public $loader = [
-        'loadPaymentMethods' => 'Loading payment methods...',
-        'placeOrder' => 'Placing order...',
-    ];
-
-    /**
-     * @var array
-     */
     public array $paymentMethods = [];
-
-    /**
-     * @var string|null
-     */
     public ?string $selectedProduct = null;
-
-    /**
-     * @var string|null
-     */
     public ?string $selectedCampaign = null;
-
-    /**
-     * @var bool
-     */
-    public bool $showSeQuraCheckoutAsHostedPage = false;
-
-    /**
-     * @var string
-     */
-    public string $hppUrl = '';
-
-    /**
-     * @var string|null
-     */
-    public ?string $identificationForm = null;
-
-    /**
-     * @var bool
-     */
     public bool $isLoading = true;
-
-    /**
-     * @var string|null
-     */
     public ?string $errorMessage = null;
 
     protected CheckoutSession $checkoutSession;
-    protected StoreManagerInterface $storeManager;
-    protected UrlInterface $urlBuilder;
+    protected CartRepositoryInterface $quoteRepository;
     protected CreateOrderRequestBuilderFactory $createOrderRequestBuilderFactory;
+    protected LoggerInterface $logger;
 
     public function __construct(
         CheckoutSession $checkoutSession,
-        StoreManagerInterface $storeManager,
-        UrlInterface $urlBuilder,
-        CreateOrderRequestBuilderFactory $createOrderRequestBuilderFactory
+        CartRepositoryInterface $quoteRepository,
+        CreateOrderRequestBuilderFactory $createOrderRequestBuilderFactory,
+        LoggerInterface $logger
     ) {
         $this->checkoutSession = $checkoutSession;
-        $this->storeManager = $storeManager;
-        $this->urlBuilder = $urlBuilder;
+        $this->quoteRepository = $quoteRepository;
         $this->createOrderRequestBuilderFactory = $createOrderRequestBuilderFactory;
+        $this->logger = $logger;
     }
 
     public function mount(): void
     {
-        $this->loadConfiguration();
         $this->loadPaymentMethods();
-    }
-
-    protected function loadConfiguration(): void
-    {
-        try {
-            $storeId = (string) $this->storeManager->getStore()->getId();
-            $generalSettingsResponse = AdminAPI::get()->generalSettings($storeId)->getGeneralSettings();
-
-            if ($generalSettingsResponse->isSuccessful()) {
-                $settings = $generalSettingsResponse->toArray();
-                $this->showSeQuraCheckoutAsHostedPage = $settings['showSeQuraCheckoutAsHostedPage'] ?? false;
-            }
-
-            $this->hppUrl = $this->urlBuilder->getUrl('sequra/hpp');
-        } catch (\Exception $e) {
-            $this->errorMessage = __('Failed to load Sequra configuration.')->render();
-        }
     }
 
     public function loadPaymentMethods(): void
@@ -118,13 +60,11 @@ class Sequra extends Component
 
             $storeId = (string) $quote->getStore()->getId();
 
-            // Create order request builder
             $builder = $this->createOrderRequestBuilderFactory->create([
                 'cartId' => $quote->getId(),
                 'storeId' => $storeId,
             ]);
 
-            // Check general settings
             $generalSettings = AdminAPI::get()->generalSettings($storeId)->getGeneralSettings();
             if (!$generalSettings->isSuccessful() || !$builder->isAllowedFor($generalSettings)) {
                 $this->paymentMethods = [];
@@ -132,11 +72,7 @@ class Sequra extends Component
                 return;
             }
 
-            // Get payment methods from Sequra API
-            $response = CheckoutAPI::get()
-                ->solicitation($storeId)
-                ->solicitFor($builder);
-
+            $response = CheckoutAPI::get()->solicitation($storeId)->solicitFor($builder);
             if (!$response->isSuccessful()) {
                 $this->paymentMethods = [];
                 $this->isLoading = false;
@@ -145,13 +81,15 @@ class Sequra extends Component
 
             $this->paymentMethods = $response->toArray()['availablePaymentMethods'] ?? [];
 
-            // Auto-select first product if available
             if (!empty($this->paymentMethods) && $this->selectedProduct === null) {
-                $this->selectedProduct = $this->paymentMethods[0]['product'] ?? null;
-                $this->selectedCampaign = $this->paymentMethods[0]['campaign'] ?? null;
+                $this->selectProduct(
+                    $this->paymentMethods[0]['product'] ?? '',
+                    $this->paymentMethods[0]['campaign'] ?? ''
+                );
             }
         } catch (\Exception $e) {
-            $this->errorMessage = __('Failed to load Sequra payment methods.')->render();
+            $this->logger->error('Failed to load SeQura payment methods: ' . $e->getMessage(), ['exception' => $e]);
+            $this->errorMessage = __('Failed to load SeQura payment methods.')->render();
             $this->paymentMethods = [];
         }
 
@@ -162,64 +100,33 @@ class Sequra extends Component
     {
         $this->selectedProduct = $product;
         $this->selectedCampaign = $campaign;
+        $this->persistSelection();
+    }
+
+    /**
+     * The selected product/campaign are stored on the quote payment so the place-order
+     * service can build the hosted-page URL and the webhook-created order carries them.
+     */
+    private function persistSelection(): void
+    {
+        if ($this->selectedProduct === null) {
+            return;
+        }
+
+        try {
+            $quote = $this->checkoutSession->getQuote();
+            $payment = $quote->getPayment();
+            $payment->setAdditionalInformation('sequra_product', $this->selectedProduct);
+            $payment->setAdditionalInformation('sequra_campaign', $this->selectedCampaign ?? '');
+            $this->quoteRepository->save($quote);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to store SeQura selection: ' . $e->getMessage(), ['exception' => $e]);
+        }
     }
 
     public function getMethodCode(): string
     {
         return self::METHOD_CODE;
-    }
-
-    public function getSelectedAdditionalData(): array
-    {
-        return [
-            'sequra_product' => $this->selectedProduct,
-            'sequra_campaign' => $this->selectedCampaign ?? '',
-        ];
-    }
-
-    public function placeOrder(): void
-    {
-        if (empty($this->selectedProduct)) {
-            $this->errorMessage = __('Please select a payment method.')->render();
-            return;
-        }
-
-        try {
-            if ($this->showSeQuraCheckoutAsHostedPage) {
-                // Redirect to Hosted Payment Page
-                $hppUrl = $this->hppUrl;
-                $hppUrl .= (strpos($hppUrl, '?') === false ? '?' : '&');
-                $hppUrl .= http_build_query([
-                    'sequra_product' => $this->selectedProduct,
-                    'sequra_campaign' => $this->selectedCampaign ?? '',
-                ]);
-
-                $this->dispatchBrowserEvent('sequra:redirect', ['url' => $hppUrl]);
-                return;
-            }
-
-            // Fetch identification form for inline mode
-            $quote = $this->checkoutSession->getQuote();
-            $storeId = (string) $quote->getStore()->getId();
-
-            $formResponse = CheckoutAPI::get()
-                ->solicitation($storeId)
-                ->getIdentificationForm(
-                    $quote->getId(),
-                    $this->selectedProduct,
-                    $this->selectedCampaign
-                );
-
-            if (!$formResponse->isSuccessful()) {
-                $this->errorMessage = __('Failed to initialize payment form.')->render();
-                return;
-            }
-
-            $form = $formResponse->getIdentificationForm()->getForm();
-            $this->dispatchBrowserEvent('sequra:showForm', ['form' => $form]);
-        } catch (\Exception $e) {
-            $this->errorMessage = __('An error occurred while placing your order.')->render();
-        }
     }
 
     public function getAmount(): int
