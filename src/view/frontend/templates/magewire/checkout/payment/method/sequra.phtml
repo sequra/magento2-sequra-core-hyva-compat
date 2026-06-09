@@ -3,20 +3,15 @@
  * @var \Hyva\SequraCore\Magewire\Checkout\Payment\Method\Sequra $magewire
  * @var \Magento\Framework\Escaper $escaper
  * @var \Magento\Framework\View\Element\Template $block
+ * @var \Hyva\Theme\ViewModel\HyvaCsp|null $hyvaCsp
  */
-
-$methodCode = $magewire->getMethodCode();
 ?>
 
-<div class="sequra-payment-methods"
-     x-data="sequraPayment()"
-     x-init="init()"
-     @sequra:redirect.window="handleRedirect($event.detail)"
-     @sequra:show-form.window="handleShowForm($event.detail)">
+<div class="sequra-payment-methods" x-data="sequraPayment()" x-init="refresh()">
 
     <?php if ($magewire->isLoading): ?>
         <div class="flex items-center justify-center py-4">
-            <svg class="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -28,31 +23,33 @@ $methodCode = $magewire->getMethodCode();
         </div>
     <?php elseif (empty($magewire->paymentMethods)): ?>
         <div class="text-gray-500 py-4">
-            <?= $escaper->escapeHtml(__('No Sequra payment methods available for this order.')) ?>
+            <?= $escaper->escapeHtml(__('No SeQura payment methods available for this order.')) ?>
         </div>
     <?php else: ?>
-        <div class="space-y-3">
+        <div class="space-y-3" role="radiogroup" aria-label="<?= $escaper->escapeHtmlAttr(__('SeQura payment methods')) ?>">
             <?php foreach ($magewire->paymentMethods as $method): ?>
                 <?php
                 $product = $method['product'] ?? '';
                 $campaign = $method['campaign'] ?? '';
                 $isSelected = $magewire->selectedProduct === $product;
+                $inputId = 'sequra_' . $product;
+                $descId = $inputId . '_desc';
                 ?>
-                <div class="sequra-payment-method border rounded-lg p-4 cursor-pointer transition-colors
-                            <?= $isSelected ? 'border-primary bg-primary-lighter' : 'border-gray-200 hover:border-gray-300' ?>"
-                     wire:click="selectProduct('<?= $escaper->escapeHtmlAttr($product) ?>', '<?= $escaper->escapeHtmlAttr($campaign) ?>')">
-
+                <label for="<?= $escaper->escapeHtmlAttr($inputId) ?>"
+                       class="sequra-payment-method block border rounded-lg p-4 cursor-pointer transition-colors
+                              <?= $isSelected ? 'border-primary bg-primary-lighter' : 'border-gray-200 hover:border-gray-300' ?>">
                     <div class="flex items-start">
                         <input type="radio"
                                name="sequra_product"
-                               id="sequra_<?= $escaper->escapeHtmlAttr($product) ?>"
+                               id="<?= $escaper->escapeHtmlAttr($inputId) ?>"
                                value="<?= $escaper->escapeHtmlAttr($product) ?>"
                                class="mt-1 mr-3"
+                               aria-describedby="<?= $escaper->escapeHtmlAttr($descId) ?>"
                                <?= $isSelected ? 'checked' : '' ?>
-                               wire:model="selectedProduct">
+                               wire:change="selectProduct('<?= $escaper->escapeJs($product) ?>', '<?= $escaper->escapeJs($campaign) ?>')">
 
-                        <label for="sequra_<?= $escaper->escapeHtmlAttr($product) ?>" class="flex-1 cursor-pointer">
-                            <div class="flex items-center">
+                        <span class="flex-1" id="<?= $escaper->escapeHtmlAttr($descId) ?>">
+                            <span class="flex items-center">
                                 <?php if (!empty($method['icon'])): ?>
                                     <span class="sequra-icon mr-2"><?= /* @noEscape */ $method['icon'] ?></span>
                                 <?php endif; ?>
@@ -60,18 +57,18 @@ $methodCode = $magewire->getMethodCode();
                                 <span class="font-medium text-gray-900">
                                     <?= $escaper->escapeHtml($method['long_title'] ?: $method['title']) ?>
                                 </span>
-                            </div>
+                            </span>
 
                             <?php if (!empty($method['cost_description'])): ?>
-                                <span class="text-sm text-gray-600 ml-0 mt-1 block">
+                                <span class="text-sm text-gray-600 mt-1 block">
                                     <?= $escaper->escapeHtml($method['cost_description']) ?>
                                 </span>
                             <?php endif; ?>
 
                             <?php if (!empty($method['description'])): ?>
-                                <p class="text-sm text-gray-500 mt-2">
+                                <span class="text-sm text-gray-500 mt-2 block">
                                     <?= $escaper->escapeHtml($method['description']) ?>
-                                </p>
+                                </span>
                             <?php endif; ?>
 
                             <span class="sequra-educational-popup text-xs text-primary underline cursor-pointer mt-1 inline-block"
@@ -79,32 +76,12 @@ $methodCode = $magewire->getMethodCode();
                                   data-amount="<?= $escaper->escapeHtmlAttr((string) $magewire->getAmount()) ?>"
                                   data-campaign="<?= $escaper->escapeHtmlAttr($campaign) ?>"
                                   @click.stop>
-                                + info
+                                <?= $escaper->escapeHtml(__('+ info')) ?>
                             </span>
-                        </label>
+                        </span>
                     </div>
-                </div>
+                </label>
             <?php endforeach; ?>
-        </div>
-
-        <div class="mt-4">
-            <button type="button"
-                    class="btn btn-primary w-full"
-                    wire:click="placeOrder"
-                    wire:loading.attr="disabled"
-                    wire:loading.class="opacity-50 cursor-not-allowed"
-                    <?= empty($magewire->selectedProduct) ? 'disabled' : '' ?>>
-                <span wire:loading.remove wire:target="placeOrder">
-                    <?= $escaper->escapeHtml(__('Place Order')) ?>
-                </span>
-                <span wire:loading wire:target="placeOrder" class="flex items-center justify-center">
-                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <?= $escaper->escapeHtml(__('Processing...')) ?>
-                </span>
-            </button>
         </div>
     <?php endif; ?>
 </div>
@@ -112,44 +89,14 @@ $methodCode = $magewire->getMethodCode();
 <script>
     function sequraPayment() {
         return {
-            init() {
-                // Initialize Sequra if available
+            refresh() {
                 if (typeof Sequra !== 'undefined' && typeof Sequra.refreshComponents === 'function') {
                     Sequra.refreshComponents();
                 }
-            },
-
-            handleRedirect(detail) {
-                if (detail && detail.url) {
-                    window.location.href = detail.url;
-                }
-            },
-
-            handleShowForm(detail) {
-                if (detail && detail.form) {
-                    // Append the form to body and show it
-                    const formContainer = document.createElement('div');
-                    formContainer.innerHTML = detail.form;
-                    document.body.appendChild(formContainer);
-
-                    // Wait for Sequra form instance
-                    this.waitForSequraForm();
-                }
-            },
-
-            waitForSequraForm() {
-                if (typeof window.SequraFormInstance === 'undefined') {
-                    setTimeout(() => this.waitForSequraForm(), 100);
-                    return;
-                }
-
-                window.SequraFormInstance.setCloseCallback(() => {
-                    window.SequraFormInstance.defaultCloseCallback();
-                    delete window.SequraFormInstance;
-                });
-
-                window.SequraFormInstance.show();
             }
         };
     }
 </script>
+<?php if (isset($hyvaCsp) && $hyvaCsp instanceof \Hyva\Theme\ViewModel\HyvaCsp) {
+    $hyvaCsp->registerInlineScript();
+} ?>
