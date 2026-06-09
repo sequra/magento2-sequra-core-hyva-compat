@@ -10,6 +10,7 @@ use Hyva\Checkout\Model\Magewire\Payment\PlaceOrderServiceInterface;
 use Magento\Framework\UrlInterface;
 use Magento\Quote\Api\CartManagementInterface;
 use Magento\Quote\Model\Quote;
+use Sequra\Core\Observer\DataAssignObserver;
 
 class PlaceOrderService extends AbstractPlaceOrderService implements PlaceOrderServiceInterface
 {
@@ -46,8 +47,8 @@ class PlaceOrderService extends AbstractPlaceOrderService implements PlaceOrderS
 
         return $this->url->getUrl('sequra/hpp', [
             '_query' => [
-                'sequra_product' => (string) $payment->getAdditionalInformation('sequra_product'),
-                'sequra_campaign' => (string) $payment->getAdditionalInformation('sequra_campaign'),
+                'sequra_product' => (string) $payment->getAdditionalInformation(DataAssignObserver::SEQURA_PRODUCT_KEY),
+                'sequra_campaign' => (string) $payment->getAdditionalInformation(DataAssignObserver::SEQURA_CAMPAIGN_KEY),
             ],
         ]);
     }

@@ -11,6 +11,7 @@ use Psr\Log\LoggerInterface;
 use SeQura\Core\BusinessLogic\AdminAPI\AdminAPI;
 use SeQura\Core\BusinessLogic\CheckoutAPI\CheckoutAPI;
 use Sequra\Core\Model\Api\Builders\CreateOrderRequestBuilderFactory;
+use Sequra\Core\Observer\DataAssignObserver;
 
 class Sequra extends Component
 {
@@ -53,8 +54,7 @@ class Sequra extends Component
             $quote = $this->checkoutSession->getQuote();
 
             if (empty($quote->getShippingAddress()->getCountryId())) {
-                $this->paymentMethods = [];
-                $this->isLoading = false;
+                $this->clearMethods();
                 return;
             }
 
@@ -67,15 +67,13 @@ class Sequra extends Component
 
             $generalSettings = AdminAPI::get()->generalSettings($storeId)->getGeneralSettings();
             if (!$generalSettings->isSuccessful() || !$builder->isAllowedFor($generalSettings)) {
-                $this->paymentMethods = [];
-                $this->isLoading = false;
+                $this->clearMethods();
                 return;
             }
 
             $response = CheckoutAPI::get()->solicitation($storeId)->solicitFor($builder);
             if (!$response->isSuccessful()) {
-                $this->paymentMethods = [];
-                $this->isLoading = false;
+                $this->clearMethods();
                 return;
             }
 
@@ -103,32 +101,6 @@ class Sequra extends Component
         $this->persistSelection();
     }
 
-    /**
-     * The selected product/campaign are stored on the quote payment so the place-order
-     * service can build the hosted-page URL and the webhook-created order carries them.
-     */
-    private function persistSelection(): void
-    {
-        if ($this->selectedProduct === null) {
-            return;
-        }
-
-        try {
-            $quote = $this->checkoutSession->getQuote();
-            $payment = $quote->getPayment();
-            $payment->setAdditionalInformation('sequra_product', $this->selectedProduct);
-            $payment->setAdditionalInformation('sequra_campaign', $this->selectedCampaign ?? '');
-            $this->quoteRepository->save($quote);
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to store SeQura selection: ' . $e->getMessage(), ['exception' => $e]);
-        }
-    }
-
-    public function getMethodCode(): string
-    {
-        return self::METHOD_CODE;
-    }
-
     public function getAmount(): int
     {
         try {
@@ -142,5 +114,34 @@ class Sequra extends Component
     public function refreshPaymentMethods(): void
     {
         $this->loadPaymentMethods();
+    }
+
+    private function clearMethods(): void
+    {
+        $this->paymentMethods = [];
+        $this->isLoading = false;
+    }
+
+    /**
+     * The selected product/campaign are stored on the quote payment so the place-order
+     * service can build the hosted-page URL and the webhook-created order carries them.
+     */
+    private function persistSelection(): void
+    {
+        try {
+            $quote = $this->checkoutSession->getQuote();
+            $payment = $quote->getPayment();
+
+            if ($payment->getAdditionalInformation(DataAssignObserver::SEQURA_PRODUCT_KEY) === $this->selectedProduct
+                && $payment->getAdditionalInformation(DataAssignObserver::SEQURA_CAMPAIGN_KEY) === $this->selectedCampaign) {
+                return;
+            }
+
+            $payment->setAdditionalInformation(DataAssignObserver::SEQURA_PRODUCT_KEY, $this->selectedProduct);
+            $payment->setAdditionalInformation(DataAssignObserver::SEQURA_CAMPAIGN_KEY, $this->selectedCampaign);
+            $this->quoteRepository->save($quote);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to store SeQura selection: ' . $e->getMessage(), ['exception' => $e]);
+        }
     }
 }
