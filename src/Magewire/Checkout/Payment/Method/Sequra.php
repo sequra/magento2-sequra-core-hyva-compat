@@ -20,6 +20,8 @@ class Sequra extends Component
     public array $paymentMethods = [];
     public ?string $selectedProduct = null;
     public ?string $selectedCampaign = null;
+    /** "product|campaign" radio binding — wire:model works under Hyvä's CSP theme, inline action arguments do not. */
+    public ?string $selection = null;
     public bool $isLoading = true;
     public ?string $errorMessage = null;
 
@@ -94,12 +96,21 @@ class Sequra extends Component
         $this->isLoading = false;
     }
 
+    public function updatedSelection(?string $value): ?string
+    {
+        $parts = explode('|', (string) $value, 2);
+        $this->selectProduct($parts[0], $parts[1] ?? '');
+
+        return $this->selection;
+    }
+
     public function selectProduct(string $product, string $campaign = ''): void
     {
         foreach ($this->paymentMethods as $method) {
             if (($method['product'] ?? '') === $product) {
                 $this->selectedProduct = $product;
                 $this->selectedCampaign = $campaign;
+                $this->selection = $product . '|' . $campaign;
                 $this->persistSelection();
                 return;
             }

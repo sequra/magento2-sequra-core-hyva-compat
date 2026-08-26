@@ -7,7 +7,7 @@
  */
 ?>
 
-<div class="sequra-payment-methods" x-data="sequraPayment()" x-init="refresh()">
+<div class="sequra-payment-methods" x-data="sequraPayment">
 
     <?php if ($magewire->isLoading): ?>
         <div class="flex items-center justify-center py-4">
@@ -31,6 +31,7 @@
                 <?php
                 $product = $method['product'] ?? '';
                 $campaign = $method['campaign'] ?? '';
+                $selectionValue = $product . '|' . $campaign;
                 $isSelected = $magewire->selectedProduct === $product;
                 $inputId = 'sequra_' . $product;
                 $descId = $inputId . '_desc';
@@ -42,11 +43,11 @@
                         <input type="radio"
                                name="sequra_product"
                                id="<?= $escaper->escapeHtmlAttr($inputId) ?>"
-                               value="<?= $escaper->escapeHtmlAttr($product) ?>"
+                               value="<?= $escaper->escapeHtmlAttr($selectionValue) ?>"
                                class="mt-1 mr-3"
                                aria-describedby="<?= $escaper->escapeHtmlAttr($descId) ?>"
                                <?= $isSelected ? 'checked' : '' ?>
-                               wire:change="selectProduct('<?= $escaper->escapeJs($product) ?>', '<?= $escaper->escapeJs($campaign) ?>')">
+                               wire:model="selection">
 
                         <span class="flex-1" id="<?= $escaper->escapeHtmlAttr($descId) ?>">
                             <span class="flex items-center">
@@ -84,19 +85,19 @@
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-</div>
 
-<script>
-    function sequraPayment() {
-        return {
-            refresh() {
-                if (typeof Sequra !== 'undefined' && typeof Sequra.refreshComponents === 'function') {
-                    Sequra.refreshComponents();
+    <script>
+        window.addEventListener('alpine:init', () => {
+            Alpine.data('sequraPayment', () => ({
+                init() {
+                    if (typeof Sequra !== 'undefined' && typeof Sequra.refreshComponents === 'function') {
+                        Sequra.refreshComponents();
+                    }
                 }
-            }
-        };
-    }
-</script>
-<?php if (isset($hyvaCsp) && $hyvaCsp instanceof \Hyva\Theme\ViewModel\HyvaCsp) {
-    $hyvaCsp->registerInlineScript();
-} ?>
+            }));
+        }, { once: true });
+    </script>
+    <?php if (isset($hyvaCsp) && $hyvaCsp instanceof \Hyva\Theme\ViewModel\HyvaCsp) {
+        $hyvaCsp->registerInlineScript();
+    } ?>
+</div>
