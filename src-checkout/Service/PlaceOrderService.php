@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Hyva\SequraCore\Service;
+namespace Hyva\SequraCoreCheckout\Service;
 
 use Hyva\Checkout\Model\Magewire\Payment\AbstractOrderData;
 use Hyva\Checkout\Model\Magewire\Payment\AbstractPlaceOrderService;

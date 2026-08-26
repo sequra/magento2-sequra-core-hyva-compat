@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Hyva\SequraCore\Magewire\Checkout\Payment\Method;
+namespace Hyva\SequraCoreCheckout\Magewire\Checkout\Payment\Method;
 
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Quote\Api\CartRepositoryInterface;

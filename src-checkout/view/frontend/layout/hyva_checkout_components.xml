@@ -7,10 +7,10 @@
                  resolves the method view via getChildBlock($method->getCode()). -->
             <block name="checkout.payment.method.sequra_payment"
                    as="sequra_payment"
-                   template="Hyva_SequraCore::magewire/checkout/payment/method/sequra.phtml">
+                   template="Hyva_SequraCoreCheckout::magewire/checkout/payment/method/sequra.phtml">
                 <arguments>
                     <argument name="magewire" xsi:type="object">
-                        Hyva\SequraCore\Magewire\Checkout\Payment\Method\Sequra
+                        Hyva\SequraCoreCheckout\Magewire\Checkout\Payment\Method\Sequra
                     </argument>
                 </arguments>
             </block>
