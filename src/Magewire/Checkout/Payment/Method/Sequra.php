@@ -96,9 +96,14 @@ class Sequra extends Component
 
     public function selectProduct(string $product, string $campaign = ''): void
     {
-        $this->selectedProduct = $product;
-        $this->selectedCampaign = $campaign;
-        $this->persistSelection();
+        foreach ($this->paymentMethods as $method) {
+            if (($method['product'] ?? '') === $product) {
+                $this->selectedProduct = $product;
+                $this->selectedCampaign = $campaign;
+                $this->persistSelection();
+                return;
+            }
+        }
     }
 
     public function getAmount(): int
