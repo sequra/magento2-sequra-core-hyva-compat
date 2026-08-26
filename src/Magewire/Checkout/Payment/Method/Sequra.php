@@ -68,13 +68,29 @@ class Sequra extends Component
             ]);
 
             $generalSettings = AdminAPI::get()->generalSettings($storeId)->getGeneralSettings();
-            if (!$generalSettings->isSuccessful() || !$builder->isAllowedFor($generalSettings)) {
+            if (!$generalSettings->isSuccessful()) {
+                $this->logger->warning('SeQura checkout: general settings response unsuccessful', [
+                    'storeId' => $storeId,
+                    'response' => $generalSettings->toArray(),
+                ]);
+                $this->clearMethods();
+                return;
+            }
+
+            if (!$builder->isAllowedFor($generalSettings)) {
+                $this->logger->info('SeQura checkout: cart not allowed (merchant per country, IP or exclusions)', [
+                    'storeId' => $storeId,
+                ]);
                 $this->clearMethods();
                 return;
             }
 
             $response = CheckoutAPI::get()->solicitation($storeId)->solicitFor($builder);
             if (!$response->isSuccessful()) {
+                $this->logger->warning('SeQura checkout: solicitation unsuccessful', [
+                    'storeId' => $storeId,
+                    'response' => $response->toArray(),
+                ]);
                 $this->clearMethods();
                 return;
             }
