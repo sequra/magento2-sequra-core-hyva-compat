@@ -1,0 +1,89 @@
+<?php
+/**
+ * @var \Hyva\SequraCoreCheckout\Magewire\Checkout\Payment\Method\Sequra $magewire
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Magento\Framework\View\Element\Template $block
+ */
+
+// No Alpine here on purpose: Livewire evaluates x-data attributes inside its
+// components with eval(), which the CSP theme forbids (EvalError, frozen step).
+?>
+
+<div class="sequra-payment-methods">
+
+    <?php if ($magewire->isLoading): ?>
+        <div class="flex items-center justify-center py-4">
+            <svg class="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="ml-2 text-sm text-gray-500"><?= $escaper->escapeHtml(__('Loading payment methods...')) ?></span>
+        </div>
+    <?php elseif ($magewire->errorMessage): ?>
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            <?= $escaper->escapeHtml($magewire->errorMessage) ?>
+        </div>
+    <?php elseif (empty($magewire->paymentMethods)): ?>
+        <div class="text-gray-500 py-4">
+            <?= $escaper->escapeHtml(__('No SeQura payment methods available for this order.')) ?>
+        </div>
+    <?php else: ?>
+        <div class="space-y-3" role="radiogroup" aria-label="<?= $escaper->escapeHtmlAttr(__('SeQura payment methods')) ?>">
+            <?php foreach ($magewire->paymentMethods as $method): ?>
+                <?php
+                $product = $method['product'] ?? '';
+                $campaign = $method['campaign'] ?? '';
+                $selectionValue = $product . '|' . $campaign;
+                $isSelected = $magewire->selectedProduct === $product;
+                $inputId = 'sequra_' . $product;
+                $descId = $inputId . '_desc';
+                ?>
+                <label for="<?= $escaper->escapeHtmlAttr($inputId) ?>"
+                       class="sequra-payment-method block border rounded-lg p-4 cursor-pointer transition-colors
+                              <?= $isSelected ? 'border-primary bg-primary-lighter' : 'border-gray-200 hover:border-gray-300' ?>">
+                    <div class="flex items-start">
+                        <input type="radio"
+                               name="sequra_product"
+                               id="<?= $escaper->escapeHtmlAttr($inputId) ?>"
+                               value="<?= $escaper->escapeHtmlAttr($selectionValue) ?>"
+                               class="mt-1 mr-3"
+                               aria-describedby="<?= $escaper->escapeHtmlAttr($descId) ?>"
+                               <?= $isSelected ? 'checked' : '' ?>
+                               wire:model="selection">
+
+                        <span class="flex-1" id="<?= $escaper->escapeHtmlAttr($descId) ?>">
+                            <span class="flex items-center">
+                                <?php if (!empty($method['icon'])): ?>
+                                    <span class="sequra-icon mr-2"><?= /* @noEscape */ $method['icon'] ?></span>
+                                <?php endif; ?>
+
+                                <span class="font-medium text-gray-900">
+                                    <?= $escaper->escapeHtml($method['long_title'] ?: $method['title']) ?>
+                                </span>
+                            </span>
+
+                            <?php if (!empty($method['cost_description'])): ?>
+                                <span class="text-sm text-gray-600 mt-1 block">
+                                    <?= $escaper->escapeHtml($method['cost_description']) ?>
+                                </span>
+                            <?php endif; ?>
+
+                            <?php if (!empty($method['description'])): ?>
+                                <span class="text-sm text-gray-500 mt-2 block">
+                                    <?= $escaper->escapeHtml($method['description']) ?>
+                                </span>
+                            <?php endif; ?>
+
+                            <span class="sequra-educational-popup text-xs text-primary underline cursor-pointer mt-1 inline-block"
+                                  data-product="<?= $escaper->escapeHtmlAttr($product) ?>"
+                                  data-amount="<?= $escaper->escapeHtmlAttr((string) $magewire->getAmount()) ?>"
+                                  data-campaign="<?= $escaper->escapeHtmlAttr($campaign) ?>">
+                                <?= $escaper->escapeHtml(__('+ info')) ?>
+                            </span>
+                        </span>
+                    </div>
+                </label>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>

@@ -6,6 +6,9 @@
     "hyva-themes/magento2-compat-module-fallback": "^1.0",
     "sequra/magento2-core": "^3.0"
   },
+  "suggest": {
+    "hyva-themes/magento2-hyva-checkout": "Activates the Hyva_SequraCoreCheckout module for Hyvä Checkout payment integration (>= 1.1.13); run bin/magento setup:upgrade after installing it"
+  },
   "authors": [{
       "name": "SeQura Tech",
       "email": "dev@sequra.es"
@@ -13,10 +16,12 @@
   "license": "MIT",
   "autoload": {
     "files": [
-      "src/registration.php"
+      "src/registration.php",
+      "src-checkout/registration.php"
     ],
     "psr-4": {
-      "Hyva\\SequraCore\\": "src/"
+      "Hyva\\SequraCore\\": "src/",
+      "Hyva\\SequraCoreCheckout\\": "src-checkout/"
     }
   }
 }

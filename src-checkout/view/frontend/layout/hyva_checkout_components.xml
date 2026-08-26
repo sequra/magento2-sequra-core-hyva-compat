@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="checkout.payment.methods">
+            <!-- The alias must equal the payment method code: Hyvä's MethodList
+                 resolves the method view via getChildBlock($method->getCode()). -->
+            <block name="checkout.payment.method.sequra_payment"
+                   as="sequra_payment"
+                   template="Hyva_SequraCoreCheckout::magewire/checkout/payment/method/sequra.phtml">
+                <arguments>
+                    <argument name="magewire" xsi:type="object">
+                        Hyva\SequraCoreCheckout\Magewire\Checkout\Payment\Method\Sequra
+                    </argument>
+                </arguments>
+            </block>
+        </referenceBlock>
+    </body>
+</page>
