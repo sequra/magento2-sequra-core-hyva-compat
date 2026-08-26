@@ -1,0 +1,115 @@
+<?php
+/**
+ * Hyvä replacement for Sequra_Core::hpp.phtml — same flow without RequireJS/jQuery.
+ *
+ * @var \Sequra\Core\Block\Hpp $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Hyva\Theme\ViewModel\HyvaCsp|null $hyvaCsp
+ */
+?>
+<div id="sequra-hpp-loading" style="display:flex;align-items:center;justify-content:center;padding:4rem 1rem;gap:.75rem;">
+    <svg style="width:1.5rem;height:1.5rem;animation:spin 1s linear infinite;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+        <circle style="opacity:.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path style="opacity:.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    <span><?= $escaper->escapeHtml(__('Loading SeQura secure payment...')) ?></span>
+</div>
+
+<script>
+    (function () {
+        if (!window.checkoutConfig || !window.checkoutConfig.quoteData) {
+            window.checkoutConfig = <?= /* @noEscape */ $block->getConfig() ?>;
+            window.isCustomerLoggedIn = window.checkoutConfig.isCustomerLoggedIn;
+            window.customerData = window.checkoutConfig.customerData;
+        }
+
+        var config = window.checkoutConfig;
+        var baseUrl = '<?= $escaper->escapeJs($block->getBaseUrl()) ?>';
+        var checkoutUrl = baseUrl.replace(/\/$/, '') + '/checkout';
+        var restUrl = baseUrl.replace(/\/$/, '') + '/rest/' + config.storeCode + '/V1';
+        var params = new URL(window.location.href).searchParams;
+        var cartId = config.quoteData.entity_id;
+
+        function readCookie(name) {
+            var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+            return match ? decodeURIComponent(match[1]) : '';
+        }
+
+        function backToCheckout() {
+            window.location.replace(checkoutUrl);
+        }
+
+        // insertAdjacentHTML does not execute embedded scripts (jQuery's append did),
+        // so scripts are recreated one by one before attaching the form to the body.
+        function appendExecutingScripts(html) {
+            var container = document.createElement('div');
+            container.innerHTML = html;
+            var scripts = container.querySelectorAll('script');
+            for (var i = 0; i < scripts.length; i++) {
+                var replacement = document.createElement('script');
+                for (var j = 0; j < scripts[i].attributes.length; j++) {
+                    replacement.setAttribute(scripts[i].attributes[j].name, scripts[i].attributes[j].value);
+                }
+                replacement.textContent = scripts[i].textContent;
+                scripts[i].parentNode.replaceChild(replacement, scripts[i]);
+            }
+            while (container.firstChild) {
+                document.body.appendChild(container.firstChild);
+            }
+        }
+
+        function showForm(tries) {
+            if (typeof window.SequraFormInstance === 'undefined') {
+                if (tries >= 100) {
+                    backToCheckout();
+                    return;
+                }
+                setTimeout(function () { showForm(tries + 1); }, 100);
+                return;
+            }
+
+            window.SequraFormInstance.setCloseCallback(function () {
+                window.SequraFormInstance.defaultCloseCallback();
+                delete window.SequraFormInstance;
+                backToCheckout();
+            });
+
+            window.SequraFormInstance.show();
+            var loading = document.getElementById('sequra-hpp-loading');
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }
+
+        var serviceUrl = config.isCustomerLoggedIn
+            ? restUrl + '/sequra_core/carts/mine/fetch-sequra_payment-form'
+            : restUrl + '/sequra_core/guest-carts/' + encodeURIComponent(cartId) + '/fetch-sequra_payment-form';
+
+        fetch(serviceUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cartId: cartId,
+                form_key: readCookie('form_key'),
+                product_data: {
+                    sequra_product: params.get('sequra_product'),
+                    sequra_campaign: params.get('sequra_campaign')
+                }
+            })
+        }).then(function (response) {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+        }).then(function (identificationForm) {
+            appendExecutingScripts(identificationForm);
+            showForm(0);
+        }).catch(function () {
+            backToCheckout();
+        });
+    })();
+</script>
+<?php if (isset($hyvaCsp) && $hyvaCsp instanceof \Hyva\Theme\ViewModel\HyvaCsp) {
+    $hyvaCsp->registerInlineScript();
+} ?>
