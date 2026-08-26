@@ -47,13 +47,26 @@ This installation method is not suited for deployments, because gitlab requires 
 
 ## Hyvä Checkout Support
 
+The package ships two Magento modules:
+
+- **`Hyva_SequraCore`** — the Hyvä Theme compatibility (widgets, widget initializer, hosted payment page). Always active.
+- **`Hyva_SequraCoreCheckout`** — the Hyvä Checkout payment integration. It **registers itself only when Hyvä Checkout and Magewire are installed** (its classes extend theirs, and registering them unconditionally would break `setup:di:compile` on stores that only use Hyvä Theme).
+
 For Hyvä Checkout payment method integration, ensure you have Hyvä Checkout (>= 1.1.13) installed:
 
 ```
 composer require hyva-themes/magento2-hyva-checkout
 ```
 
-The SeQura payment methods will automatically appear in the checkout when both this compatibility module and Hyvä Checkout are installed.
+**Important:** because the checkout module registers conditionally, Magento only discovers it after Hyvä Checkout is present. After installing (or later adding) Hyvä Checkout, you **must** run:
+
+```
+bin/magento setup:upgrade
+bin/magento setup:di:compile   # production mode
+bin/magento setup:static-content:deploy <locales>   # production mode
+```
+
+The SeQura payment methods will then automatically appear in the checkout.
 
 Order placement is handled through a Hyvä Checkout place-order service: the Magento order is **not** created when the shopper clicks *Place Order*. Instead the shopper is redirected to the SeQura hosted page to complete identification, and the order is created by the SeQura webhook — exactly as in the standard Magento checkout.
 
