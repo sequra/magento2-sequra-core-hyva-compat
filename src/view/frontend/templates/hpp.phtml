@@ -88,7 +88,10 @@
         fetch(serviceUrl, {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             body: JSON.stringify({
                 cartId: cartId,
                 form_key: readCookie('form_key'),
