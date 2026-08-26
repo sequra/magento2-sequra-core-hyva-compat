@@ -1,0 +1,4 @@
+# Keep repository-only files out of the composer dist archive (git archive / Packagist)
+/.github        export-ignore
+/docs           export-ignore
+/.gitattributes export-ignore
