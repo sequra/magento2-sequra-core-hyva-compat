@@ -3,11 +3,13 @@
  * @var \Hyva\SequraCore\Magewire\Checkout\Payment\Method\Sequra $magewire
  * @var \Magento\Framework\Escaper $escaper
  * @var \Magento\Framework\View\Element\Template $block
- * @var \Hyva\Theme\ViewModel\HyvaCsp|null $hyvaCsp
  */
+
+// No Alpine here on purpose: Livewire evaluates x-data attributes inside its
+// components with eval(), which the CSP theme forbids (EvalError, frozen step).
 ?>
 
-<div class="sequra-payment-methods" x-data="sequraPayment">
+<div class="sequra-payment-methods">
 
     <?php if ($magewire->isLoading): ?>
         <div class="flex items-center justify-center py-4">
@@ -75,8 +77,7 @@
                             <span class="sequra-educational-popup text-xs text-primary underline cursor-pointer mt-1 inline-block"
                                   data-product="<?= $escaper->escapeHtmlAttr($product) ?>"
                                   data-amount="<?= $escaper->escapeHtmlAttr((string) $magewire->getAmount()) ?>"
-                                  data-campaign="<?= $escaper->escapeHtmlAttr($campaign) ?>"
-                                  @click.stop>
+                                  data-campaign="<?= $escaper->escapeHtmlAttr($campaign) ?>">
                                 <?= $escaper->escapeHtml(__('+ info')) ?>
                             </span>
                         </span>
@@ -85,19 +86,4 @@
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-
-    <script>
-        window.addEventListener('alpine:init', () => {
-            Alpine.data('sequraPayment', () => ({
-                init() {
-                    if (typeof Sequra !== 'undefined' && typeof Sequra.refreshComponents === 'function') {
-                        Sequra.refreshComponents();
-                    }
-                }
-            }));
-        }, { once: true });
-    </script>
-    <?php if (isset($hyvaCsp) && $hyvaCsp instanceof \Hyva\Theme\ViewModel\HyvaCsp) {
-        $hyvaCsp->registerInlineScript();
-    } ?>
 </div>
