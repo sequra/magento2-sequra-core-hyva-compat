@@ -29,8 +29,15 @@ class PlaceOrderService extends AbstractPlaceOrderService implements PlaceOrderS
      * SeQura creates the Magento order from its webhook (sequra/webhook) once the
      * shopper completes identification, exactly as in the standard checkout. The
      * checkout step must therefore not place the order and must leave the quote
-     * active for the webhook — so this is a no-op that reports no order id.
+     * active for the webhook. canPlaceOrder() = false keeps the processor's order
+     * id null, so Hyvä does not fire order:place:success before payment; the
+     * no-op placeOrder() stays as a safety net should it ever be called.
      */
+    public function canPlaceOrder(): bool
+    {
+        return false;
+    }
+
     public function placeOrder(Quote $quote): int
     {
         return 0;
