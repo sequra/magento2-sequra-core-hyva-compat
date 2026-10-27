@@ -4,5 +4,7 @@
     <event name="payment_method_is_active">
         <observer name="hyva_sequra_hide_on_unconnected_store"
                   instance="Hyva\SequraCoreCheckout\Observer\HideSequraOnUnconnectedStore"/>
+        <observer name="hyva_sequra_hide_without_products"
+                  instance="Hyva\SequraCoreCheckout\Observer\HideSequraWithoutProducts"/>
     </event>
 </config>

@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Hyva\SequraCoreCheckout\Magewire\Checkout\Payment\Method;
 
+use Hyva\Checkout\Model\Magewire\Component\EvaluationInterface;
+use Hyva\Checkout\Model\Magewire\Component\EvaluationResultFactory;
+use Hyva\Checkout\Model\Magewire\Component\EvaluationResultInterface;
+use Hyva\SequraCoreCheckout\Service\AvailablePaymentMethods;
 use Magento\Checkout\Model\Session as CheckoutSession;
+use Magento\Framework\App\ObjectManager;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magewirephp\Magewire\Component;
 use Psr\Log\LoggerInterface;
-use SeQura\Core\BusinessLogic\AdminAPI\AdminAPI;
-use SeQura\Core\BusinessLogic\CheckoutAPI\CheckoutAPI;
 use Sequra\Core\Model\Api\Builders\CreateOrderRequestBuilderFactory;
 use Sequra\Core\Observer\DataAssignObserver;
 
-class Sequra extends Component
+class Sequra extends Component implements EvaluationInterface
 {
     public const METHOD_CODE = 'sequra_payment';
 
@@ -24,22 +27,28 @@ class Sequra extends Component
     public ?string $selection = null;
     public bool $isLoading = true;
     public ?string $errorMessage = null;
+    /** SeQura answered and offers nothing for this cart (as opposed to "could not ask"). */
+    public bool $unavailable = false;
 
     protected CheckoutSession $checkoutSession;
     protected CartRepositoryInterface $quoteRepository;
     protected CreateOrderRequestBuilderFactory $createOrderRequestBuilderFactory;
     protected LoggerInterface $logger;
+    protected AvailablePaymentMethods $availablePaymentMethods;
 
     public function __construct(
         CheckoutSession $checkoutSession,
         CartRepositoryInterface $quoteRepository,
         CreateOrderRequestBuilderFactory $createOrderRequestBuilderFactory,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?AvailablePaymentMethods $availablePaymentMethods = null
     ) {
         $this->checkoutSession = $checkoutSession;
         $this->quoteRepository = $quoteRepository;
         $this->createOrderRequestBuilderFactory = $createOrderRequestBuilderFactory;
         $this->logger = $logger;
+        $this->availablePaymentMethods = $availablePaymentMethods
+            ?: ObjectManager::getInstance()->get(AvailablePaymentMethods::class);
     }
 
     public function mount(): void
@@ -51,62 +60,22 @@ class Sequra extends Component
     {
         $this->isLoading = true;
         $this->errorMessage = null;
+        $this->unavailable = false;
 
-        try {
-            $quote = $this->checkoutSession->getQuote();
+        $methods = $this->availablePaymentMethods->get($this->checkoutSession->getQuote());
+        if ($methods === null) {
+            $this->clearMethods();
+            return;
+        }
 
-            if (empty($quote->getShippingAddress()->getCountryId())) {
-                $this->clearMethods();
-                return;
-            }
+        $this->paymentMethods = $methods;
+        $this->unavailable = empty($methods);
 
-            $storeId = (string) $quote->getStore()->getId();
-
-            $builder = $this->createOrderRequestBuilderFactory->create([
-                'cartId' => $quote->getId(),
-                'storeId' => $storeId,
-            ]);
-
-            $generalSettings = AdminAPI::get()->generalSettings($storeId)->getGeneralSettings();
-            if (!$generalSettings->isSuccessful()) {
-                $this->logger->warning('SeQura checkout: general settings response unsuccessful', [
-                    'storeId' => $storeId,
-                    'response' => $generalSettings->toArray(),
-                ]);
-                $this->clearMethods();
-                return;
-            }
-
-            if (!$builder->isAllowedFor($generalSettings)) {
-                $this->logger->info('SeQura checkout: cart not allowed (merchant per country, IP or exclusions)', [
-                    'storeId' => $storeId,
-                ]);
-                $this->clearMethods();
-                return;
-            }
-
-            $response = CheckoutAPI::get()->solicitation($storeId)->solicitFor($builder);
-            if (!$response->isSuccessful()) {
-                $this->logger->warning('SeQura checkout: solicitation unsuccessful', [
-                    'storeId' => $storeId,
-                    'response' => $response->toArray(),
-                ]);
-                $this->clearMethods();
-                return;
-            }
-
-            $this->paymentMethods = $response->toArray()['availablePaymentMethods'] ?? [];
-
-            if (!empty($this->paymentMethods) && $this->selectedProduct === null) {
-                $this->selectProduct(
-                    $this->paymentMethods[0]['product'] ?? '',
-                    $this->paymentMethods[0]['campaign'] ?? ''
-                );
-            }
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to load SeQura payment methods: ' . $e->getMessage(), ['exception' => $e]);
-            $this->errorMessage = __('Failed to load SeQura payment methods.')->render();
-            $this->paymentMethods = [];
+        if (!empty($this->paymentMethods) && $this->selectedProduct === null) {
+            $this->selectProduct(
+                $this->paymentMethods[0]['product'] ?? '',
+                $this->paymentMethods[0]['campaign'] ?? ''
+            );
         }
 
         $this->isLoading = false;
@@ -146,6 +115,21 @@ class Sequra extends Component
     public function refreshPaymentMethods(): void
     {
         $this->loadPaymentMethods();
+    }
+
+    /**
+     * Only blocks when SeQura answered that it offers nothing. When it could not be asked, the
+     * hosted page solicits again and decides, as before.
+     */
+    public function evaluateCompletion(EvaluationResultFactory $resultFactory): EvaluationResultInterface
+    {
+        if ($this->unavailable) {
+            return $resultFactory->createErrorMessageEvent()
+                ->withCustomEvent('payment:method:error')
+                ->withMessage((string) __('SeQura is not available for this order. Please choose another payment method.'));
+        }
+
+        return $resultFactory->createSuccess();
     }
 
     private function clearMethods(): void
