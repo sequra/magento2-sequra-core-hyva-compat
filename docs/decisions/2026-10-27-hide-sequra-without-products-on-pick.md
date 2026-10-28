@@ -1,7 +1,7 @@
 # Hide sequra_payment once SeQura offers no products, without soliciting on render
 
 ---
-* **Status:** 💡 proposed
+* **Status:** ✅ approved
 * **Proposal date:** 2026-10-27
 * **Technical Story:** follow-up of the caveat in [#5](https://github.com/sequra/magento2-sequra-core-hyva-compat/pull/5)
 ---
