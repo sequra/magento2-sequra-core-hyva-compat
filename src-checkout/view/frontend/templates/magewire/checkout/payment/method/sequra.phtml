@@ -23,6 +23,10 @@
         <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
             <?= $escaper->escapeHtml($magewire->errorMessage) ?>
         </div>
+    <?php elseif ($magewire->unavailable): ?>
+        <div class="text-gray-500 py-4" role="status">
+            <?= $escaper->escapeHtml(__('SeQura is not available for this order. Please choose another payment method.')) ?>
+        </div>
     <?php elseif (empty($magewire->paymentMethods)): ?>
         <div class="text-gray-500 py-4">
             <?= $escaper->escapeHtml(__('No SeQura payment methods available for this order.')) ?>
