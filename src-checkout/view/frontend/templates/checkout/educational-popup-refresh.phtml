@@ -1,0 +1,24 @@
+<?php
+/**
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Hyva\Theme\ViewModel\HyvaCsp|null $hyvaCsp
+ */
+
+// The SeQura SDK binds the "+ info" links (.sequra-educational-popup) when it loads and on
+// Sequra.refreshComponents(). Magewire draws the SeQura method after the page has loaded (when the
+// shopper picks it), so refresh after every Magewire update that leaves one of those links.
+?>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        Magewire.hook('message.processed', (message, component) => {
+            if (!component.el.querySelector('.sequra-educational-popup')) {
+                return;
+            }
+
+            window.Sequra?.onLoad?.(() => window.Sequra.refreshComponents?.());
+        });
+    }, { once: true });
+</script>
+<?php if (isset($hyvaCsp) && $hyvaCsp instanceof \Hyva\Theme\ViewModel\HyvaCsp) {
+    $hyvaCsp->registerInlineScript();
+} ?>
